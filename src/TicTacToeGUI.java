@@ -22,7 +22,6 @@ public class TicTacToeGUI extends JFrame {
     private final Color COLOR_BACKGROUND = new Color(248, 249, 250); // Off-white
     private final Color COLOR_CARD = Color.WHITE;
     private final Color COLOR_TEXT_PRIMARY = new Color(33, 37, 41); // Dark Gray
-    private final Color COLOR_TEXT_SECONDARY = new Color(108, 117, 125); // Medium Gray
     private final Color COLOR_PRIMARY = new Color(73, 80, 87); // Grayish accent
     private final Color COLOR_BORDER = new Color(222, 226, 230); // Light Gray Border
     private final Color COLOR_PLAYER_X = new Color(23, 113, 230); // Blue

@@ -3,9 +3,9 @@ import java.awt.event.ActionEvent;
 import java.awt.event.ActionListener;
 import java.awt.event.MouseAdapter;
 import java.awt.event.MouseEvent;
+import java.awt.geom.Point2D;
 import java.awt.image.BufferedImage;
 import javax.swing.*;
-import javax.swing.border.Border;
 import javax.swing.border.EmptyBorder;
 
 public class ReversiGUI extends JFrame {
@@ -85,7 +85,7 @@ public class ReversiGUI extends JFrame {
         JButton pvaButton = createStyledModeButton("玩家 vs. 電腦");
         pvaButton.addActionListener(e -> startGame(GameMode.PLAYER_VS_AI));
         panel.add(pvaButton, gbc);
-        
+
         JButton backButton = new JButton("返回遊戲選擇");
         backButton.setFont(FONT_NEW_GAME);
         backButton.addActionListener(e -> {
@@ -97,7 +97,7 @@ public class ReversiGUI extends JFrame {
 
         return panel;
     }
-    
+
     private JButton createStyledModeButton(String text) {
         JButton button = new JButton(text);
         button.setFont(FONT_MODE_BUTTON);
@@ -143,14 +143,19 @@ public class ReversiGUI extends JFrame {
 
         // Board Panel
         JPanel boardPanel = new JPanel(new GridLayout(BOARD_SIZE, BOARD_SIZE, 2, 2));
-        boardPanel.setBackground(COLOR_BOARD);
+        boardPanel.setBackground(new Color(30, 130, 30));
         boardPanel.setBorder(BorderFactory.createLineBorder(COLOR_BOARD, 5));
 
         for (int i = 0; i < BOARD_SIZE; i++) {
             for (int j = 0; j < BOARD_SIZE; j++) {
                 buttons[i][j] = new JButton("");
                 buttons[i][j].setFocusable(false);
-                buttons[i][j].setBackground(COLOR_BOARD);
+                if((i+j)%2 == 0){
+                    buttons[i][j].setBackground(new Color(34, 139, 34));
+                }
+                else{
+                    buttons[i][j].setBackground(new Color(30, 130, 30));
+                }
                 buttons[i][j].setBorder(null);
                 buttons[i][j].addActionListener(new ButtonClickListener(i, j));
                 final int r = i;
@@ -158,11 +163,21 @@ public class ReversiGUI extends JFrame {
                 buttons[i][j].addMouseListener(new MouseAdapter() {
                      public void mouseEntered(MouseEvent evt) {
                         if (game.isValidMove(r, c)) {
-                            buttons[r][c].setBackground(COLOR_BOARD.brighter());
+                            if((r+c)%2 == 0){
+                                buttons[r][c].setBackground(new Color(34, 139, 34).brighter());
+                            }
+                            else{
+                                buttons[r][c].setBackground(new Color(30, 130, 30).brighter());
+                            }
                         }
                     }
                     public void mouseExited(MouseEvent evt) {
-                        buttons[r][c].setBackground(COLOR_BOARD);
+                        if((r+c)%2 == 0){
+                            buttons[r][c].setBackground(new Color(34, 139, 34));
+                        }
+                        else{
+                            buttons[r][c].setBackground(new Color(30, 130, 30));
+                        }
                     }
                 });
                 boardPanel.add(buttons[i][j]);
@@ -182,7 +197,7 @@ public class ReversiGUI extends JFrame {
         gamePanel.add(footerPanel, BorderLayout.SOUTH);
         return gamePanel;
     }
-    
+
     private void startGame(GameMode mode) {
         this.gameMode = mode;
         game.reset();
@@ -235,7 +250,7 @@ public class ReversiGUI extends JFrame {
                 buttons[i][j].setEnabled(game.getGameState() == ReversiGame.GameState.PLAYING);
             }
         }
-        
+
         // Highlight valid moves
         if (game.getGameState() == ReversiGame.GameState.PLAYING) {
              for (int i = 0; i < BOARD_SIZE; i++) {
@@ -262,40 +277,56 @@ public class ReversiGUI extends JFrame {
                 statusLabel.setText("遊戲平局！");
                 break;
         }
-        
+
         int[] score = game.getScore();
         scoreLabel.setText(String.format("黑棋: %d, 白棋: %d", score[0], score[1]));
     }
-    
+
     private Icon getIconForSymbol(char symbol, int row, int col) {
         int size = buttons[row][col].getWidth();
         if (size == 0) size = 50; // Default size
-        
-        Color color;
+
+        Color primaryColor;
         boolean fill = true;
         switch (symbol) {
             case 'B':
-                color = Color.BLACK;
+                primaryColor = Color.BLACK;
                 break;
             case 'W':
-                color = Color.WHITE;
+                primaryColor = Color.WHITE;
                 break;
             case '+': // Valid move hint
-                 color = new Color(255, 255, 255, 120);
+                 primaryColor = new Color(255, 255, 255, 120);
                  fill = false;
                  break;
             default:
                 return null;
         }
-        
+
         BufferedImage image = new BufferedImage(size, size, BufferedImage.TYPE_INT_ARGB);
         Graphics2D g2d = image.createGraphics();
         g2d.setRenderingHint(RenderingHints.KEY_ANTIALIASING, RenderingHints.VALUE_ANTIALIAS_ON);
-        g2d.setColor(color);
-        if(fill) {
+
+        if (fill) {
+            // Use a gradient for a more 3D look
+            Color lighterColor = primaryColor.brighter();
+            if(primaryColor == Color.BLACK) {
+                lighterColor = new Color(80,80,80);
+            }
+             if(primaryColor == Color.WHITE) {
+                lighterColor = new Color(200,200,200);
+            }
+            Point2D center = new Point2D.Float(size / 2.0f, size / 2.0f);
+            float radius = size / 2.0f;
+            float[] dist = {0.0f, 1.0f};
+            Point2D focus = new Point2D.Float(size / 2.0f - 2, size / 2.0f - 2);
+            Color[] colors = {lighterColor, primaryColor};
+            RadialGradientPaint p = new RadialGradientPaint(center, radius, focus, dist, colors, MultipleGradientPaint.CycleMethod.NO_CYCLE);
+            g2d.setPaint(p);
             g2d.fillOval(2, 2, size - 5, size - 5);
         } else {
-             g2d.drawOval(size/2 - 5, size/2 - 5, 10, 10);
+            g2d.setColor(primaryColor);
+            g2d.drawOval(size/2 - 5, size/2 - 5, 10, 10);
         }
 
         g2d.dispose();
