@@ -8,6 +8,10 @@ import java.awt.event.ActionEvent;
 import java.awt.event.ActionListener;
 import java.awt.image.BufferedImage;
 
+/**
+ * 黑白棋的圖形使用者介面 (GUI)。
+ * 負責繪製棋盤、棋子，處理使用者互動，並使用 SwingWorker 處理 AI 運算。
+ */
 public class ReversiGUI extends JFrame {
     public enum GameMode {
         PLAYER_VS_PLAYER,
@@ -97,7 +101,7 @@ public class ReversiGUI extends JFrame {
         headerPanel.add(scoreLabel, BorderLayout.SOUTH);
 
         JPanel boardPanel = new JPanel(new GridLayout(BOARD_SIZE, BOARD_SIZE));
-        boardPanel.setBackground(new Color(0, 128, 0));
+        boardPanel.setBackground(new Color(0, 128, 0)); // 經典綠色背景
         for (int i = 0; i < BOARD_SIZE; i++) {
             for (int j = 0; j < BOARD_SIZE; j++) {
                 buttons[i][j] = new JButton();
@@ -127,12 +131,16 @@ public class ReversiGUI extends JFrame {
         cardLayout.show(mainPanel, "GAME");
     }
 
+    /**
+     * 處理 AI 的回合。
+     * 使用 SwingWorker 在背景執行緒中計算最佳步數，避免凍結 UI。
+     */
     private void handleAITurn() {
-        setBoardEnabled(false);
+        setBoardEnabled(false); // AI 思考時鎖定棋盤
         SwingWorker<int[], Void> worker = new SwingWorker<>() {
             @Override
             protected int[] doInBackground() throws Exception {
-                Thread.sleep(500);
+                Thread.sleep(500); // 模擬思考時間
                 return ReversiAIPlayer.findBestMove(game);
             }
 
@@ -147,6 +155,7 @@ public class ReversiGUI extends JFrame {
                     e.printStackTrace();
                 } finally {
                     updateView();
+                    // 如果遊戲仍在進行，解鎖棋盤
                     if (game.getGameState() == ReversiGame.GameState.PLAYING) {
                         setBoardEnabled(true);
                     }
@@ -171,6 +180,7 @@ public class ReversiGUI extends JFrame {
 
             if (game.makeMove(row, col)) {
                 updateView();
+                // 如果是人機對戰且輪到白棋（電腦）
                 if (gameMode == GameMode.PLAYER_VS_AI &&
                         game.getGameState() == ReversiGame.GameState.PLAYING &&
                         game.getCurrentPlayer() == 'W') {
@@ -188,31 +198,44 @@ public class ReversiGUI extends JFrame {
         }
     }
 
+    /**
+     * 動態繪製棋子圖示。
+     * @param color 棋子顏色
+     * @param size 按鈕大小
+     * @return 包含圓形棋子的 Icon
+     */
     private Icon createPieceIcon(Color color, int size) {
         if (size <= 0)
-            size = 50; // Default size if not rendered yet
+            size = 50; // 防止尚未渲染時大小為 0
         BufferedImage image = new BufferedImage(size, size, BufferedImage.TYPE_INT_ARGB);
         Graphics2D g2d = image.createGraphics();
         g2d.setRenderingHint(RenderingHints.KEY_ANTIALIASING, RenderingHints.VALUE_ANTIALIAS_ON);
         g2d.setColor(color);
-        g2d.fillOval(3, 3, size - 7, size - 7); // Margins for the piece
+        g2d.fillOval(3, 3, size - 7, size - 7); // 留邊距
         g2d.dispose();
         return new ImageIcon(image);
     }
 
+    /**
+     * 動態繪製「可落子」提示圖示（小灰點）。
+     */
     private Icon createHintIcon(int size) {
         if (size <= 0)
             size = 50;
         BufferedImage image = new BufferedImage(size, size, BufferedImage.TYPE_INT_ARGB);
         Graphics2D g2d = image.createGraphics();
         g2d.setRenderingHint(RenderingHints.KEY_ANTIALIASING, RenderingHints.VALUE_ANTIALIAS_ON);
-        g2d.setColor(new Color(192, 192, 192, 128)); // Semi-transparent grey
+        g2d.setColor(new Color(192, 192, 192, 128)); // 半透明灰色
         int dotSize = size / 4;
         g2d.fillOval(size / 2 - dotSize / 2, size / 2 - dotSize / 2, dotSize, dotSize);
         g2d.dispose();
         return new ImageIcon(image);
     }
 
+    /**
+     * 根據遊戲狀態更新整個介面。
+     * 包含按鈕圖示、分數和狀態文字。
+     */
     private void updateView() {
         char currentPlayer = game.getCurrentPlayer();
         boolean isGameOver = game.getGameState() != ReversiGame.GameState.PLAYING;
@@ -222,8 +245,8 @@ public class ReversiGUI extends JFrame {
             for (int j = 0; j < BOARD_SIZE; j++) {
                 char symbol = game.getSymbolAt(i, j);
                 JButton button = buttons[i][j];
-                button.setText("");
-                button.setBackground(new Color(0, 128, 0)); // Standard green
+                button.setText(""); // 黑白棋不使用文字，只用圖示
+                button.setBackground(new Color(0, 128, 0));
 
                 if (symbol == 'B') {
                     button.setIcon(createPieceIcon(Color.BLACK, buttonSize));
@@ -231,7 +254,8 @@ public class ReversiGUI extends JFrame {
                 } else if (symbol == 'W') {
                     button.setIcon(createPieceIcon(Color.LIGHT_GRAY, buttonSize));
                     button.setDisabledIcon(createPieceIcon(Color.LIGHT_GRAY, buttonSize));
-                } else { // Empty cell
+                } else { // 空格
+                    // 顯示合法步數的提示
                     if (!isGameOver && game.isValidMoveForPlayer(i, j, currentPlayer)) {
                         button.setIcon(createHintIcon(buttonSize));
                         button.setDisabledIcon(createHintIcon(buttonSize));

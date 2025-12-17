@@ -8,6 +8,10 @@ import javax.swing.border.EmptyBorder;
 
 import com.boardgames.GameSelectionGUI;
 
+/**
+ * 井字棋的圖形使用者介面 (GUI)。
+ * 負責顯示遊戲畫面、處理使用者輸入並與遊戲邏輯 (Model) 互動。
+ */
 public class TicTacToeGUI extends JFrame {
 
     public enum GameMode {
@@ -22,16 +26,16 @@ public class TicTacToeGUI extends JFrame {
     private final TicTacToeGame game;
     private GameMode gameMode;
 
-    // --- Modern, Simple Color Palette (shadcn/ui inspired) ---
-    private final Color COLOR_BACKGROUND = new Color(248, 249, 250); // Off-white
+    // --- 現代化簡約配色 (靈感來自 shadcn/ui) ---
+    private final Color COLOR_BACKGROUND = new Color(248, 249, 250); // 米白色背景
     private final Color COLOR_CARD = Color.WHITE;
-    private final Color COLOR_TEXT_PRIMARY = new Color(33, 37, 41); // Dark Gray
-    private final Color COLOR_PRIMARY = new Color(73, 80, 87); // Grayish accent
-    private final Color COLOR_BORDER = new Color(222, 226, 230); // Light Gray Border
-    private final Color COLOR_PLAYER_X = new Color(23, 113, 230); // Blue
-    private final Color COLOR_PLAYER_O = new Color(230, 126, 34); // Orange
+    private final Color COLOR_TEXT_PRIMARY = new Color(33, 37, 41); // 深灰色文字
+    private final Color COLOR_PRIMARY = new Color(73, 80, 87); // 灰階強調色
+    private final Color COLOR_BORDER = new Color(222, 226, 230); // 淺灰邊框
+    private final Color COLOR_PLAYER_X = new Color(23, 113, 230); // 藍色 (X)
+    private final Color COLOR_PLAYER_O = new Color(230, 126, 34); // 橘色 (O)
 
-    // --- Fonts ---
+    // --- 字體設定 ---
     private final Font FONT_BUTTON = new Font("Segoe UI", Font.BOLD, 72);
     private final Font FONT_LABEL = new Font("微軟正黑體", Font.BOLD, 22);
     private final Font FONT_NEW_GAME = new Font("微軟正黑體", Font.PLAIN, 16);
@@ -51,13 +55,13 @@ public class TicTacToeGUI extends JFrame {
         setDefaultCloseOperation(JFrame.EXIT_ON_CLOSE);
         setLocationRelativeTo(null);
 
-        // Create Mode Selection Panel
+        // 建立模式選擇面板
         JPanel modeSelectionPanel = createModeSelectionPanel();
 
-        // Create Game Panel
+        // 建立遊戲面板
         JPanel gamePanel = createGamePanel();
 
-        // Add panels to the main panel with CardLayout
+        // 使用 CardLayout 來切換「模式選擇」與「遊戲進行」畫面
         mainPanel.add(modeSelectionPanel, "MODE_SELECTION");
         mainPanel.add(gamePanel, "GAME");
 
@@ -207,8 +211,10 @@ public class TicTacToeGUI extends JFrame {
         public void actionPerformed(ActionEvent e) {
             if (game.getGameState() != TicTacToeGame.GameState.PLAYING)
                 return;
+            // 嘗試落子
             if (game.makeMove(row, col)) {
-                updateView();
+                updateView(); // 更新畫面
+                // 如果是人機對戰模式，且輪到電腦 (O) 下棋
                 if (gameMode == GameMode.PLAYER_VS_AI &&
                         game.getGameState() == TicTacToeGame.GameState.PLAYING &&
                         game.getCurrentPlayer() == 'O') {
@@ -218,10 +224,16 @@ public class TicTacToeGUI extends JFrame {
         }
     }
 
+    /**
+     * 處理 AI 的回合。
+     * 使用 Timer 延遲 500ms 模擬思考時間，提升使用者體驗。
+     */
     private void handleAITurn() {
+        // 暫時停用所有按鈕，防止玩家在 AI 思考時點擊
         for (JButton[] row : buttons)
             for (JButton button : row)
                 button.setEnabled(false);
+                
         Timer timer = new Timer(500, e -> {
             int[] aiMove = TicTacToeAIPlayer.findRandomMove(game.getBoard());
             if (aiMove != null) {
@@ -233,15 +245,20 @@ public class TicTacToeGUI extends JFrame {
         timer.start();
     }
 
+    /**
+     * 更新畫面以反映最新的遊戲狀態。
+     */
     private void updateView() {
         for (int i = 0; i < 3; i++) {
             for (int j = 0; j < 3; j++) {
                 char symbol = game.getSymbolAt(i, j);
                 buttons[i][j].setText(String.valueOf(symbol).trim());
                 buttons[i][j].setForeground(symbol == 'X' ? COLOR_PLAYER_X : COLOR_PLAYER_O);
+                
+                // 判斷按鈕是否應該啟用 (只有空位且遊戲進行中，且不是 AI 回合時才啟用)
                 boolean enableButton = (symbol == ' ' && game.getGameState() == TicTacToeGame.GameState.PLAYING);
                 if (gameMode == GameMode.PLAYER_VS_AI && game.getCurrentPlayer() == 'O' && enableButton) {
-                    enableButton = false;
+                    enableButton = false; // AI 回合時鎖定
                 }
                 buttons[i][j].setEnabled(enableButton);
                 buttons[i][j].setBackground(COLOR_CARD);
@@ -267,12 +284,15 @@ public class TicTacToeGUI extends JFrame {
         }
     }
 
+    /**
+     * 高亮顯示獲勝的連線。
+     */
     private void highlightWinningButtons(char winner) {
         Color winColor = (winner == 'X' ? COLOR_PLAYER_X : COLOR_PLAYER_O).brighter();
         int[][] winLines = {
-                { 0, 0, 0, 1, 0, 2 }, { 1, 0, 1, 1, 1, 2 }, { 2, 0, 2, 1, 2, 2 }, // rows
-                { 0, 0, 1, 0, 2, 0 }, { 0, 1, 1, 1, 2, 1 }, { 0, 2, 1, 2, 2, 2 }, // cols
-                { 0, 0, 1, 1, 2, 2 }, { 0, 2, 1, 1, 2, 0 } // diags
+                { 0, 0, 0, 1, 0, 2 }, { 1, 0, 1, 1, 1, 2 }, { 2, 0, 2, 1, 2, 2 }, // 橫排
+                { 0, 0, 1, 0, 2, 0 }, { 0, 1, 1, 1, 2, 1 }, { 0, 2, 1, 2, 2, 2 }, // 直排
+                { 0, 0, 1, 1, 2, 2 }, { 0, 2, 1, 1, 2, 0 } // 對角線
         };
         for (int[] line : winLines) {
             if (game.getSymbolAt(line[0], line[1]) == winner &&
